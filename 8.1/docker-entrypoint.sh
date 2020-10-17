@@ -528,8 +528,9 @@ check_for_upgrade() {
             # Move in-image data volume contents to /data to seed the volume
             mv ${IGNITION_INSTALL_LOCATION}/data/* "${DATA_VOLUME_LOCATION}/"
             # Replace symbolic links in base install location
-            rm "${IGNITION_INSTALL_LOCATION}/data"
+            rm "${IGNITION_INSTALL_LOCATION}/data" "${IGNITION_INSTALL_LOCATION}/temp"
             ln -s "${DATA_VOLUME_LOCATION}" "${IGNITION_INSTALL_LOCATION}/data"
+            ln -s "${DATA_VOLUME_LOCATION}/temp" "${IGNITION_INSTALL_LOCATION}/temp"
             # Drop another symbolic link in original location for compatibility
             rmdir /var/lib/ignition/data
             ln -s "${DATA_VOLUME_LOCATION}" /var/lib/ignition/data
@@ -538,8 +539,9 @@ check_for_upgrade() {
         # Check if we're using an empty-volume mode (concurrent run)
         if [ "${DATA_VOLUME_LOCATION}" == "${EMPTY_VOLUME_PATH}" ]; then
             # Replace symbolic links in base install location
-            rm "${IGNITION_INSTALL_LOCATION}/data"
+            rm "${IGNITION_INSTALL_LOCATION}/data" "${IGNITION_INSTALL_LOCATION}/temp"
             ln -s "${DATA_VOLUME_LOCATION}" "${IGNITION_INSTALL_LOCATION}/data"
+            ln -s "${DATA_VOLUME_LOCATION}/temp" "${IGNITION_INSTALL_LOCATION}/temp"
             # Remove the in-image data folder (that presumably is still fresh, extra safety check here)
             # and place a symbolic link to the /data volume for compatibility
             if [ ! -a "/var/lib/ignition/data/db/config.idb" ]; then
@@ -563,6 +565,8 @@ check_for_upgrade() {
                 # Init file present, upgrade required
                 echo "Detected Ignition Volume from prior version (${volume_version:-unknown}), running Upgrader"
                 java -classpath "lib/core/common/common.jar" com.inductiveautomation.ignition.common.upgrader.Upgrader . data logs file=ignition.conf
+                echo "Performing additional required volume updates"
+                mkdir -p "${DATA_VOLUME_LOCATION}/temp"
                 echo "${image_version}" > "${init_file_path}"
                 # Correlate the result of the version check
                 if [ ${version_check} -eq 1 ]; then 
